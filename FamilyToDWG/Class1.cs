@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
@@ -26,7 +27,22 @@ public class FamilyToDWG : IExternalCommand
     {
         UIApplication uiApp = commandData.Application;
 
-        UIDocument uiDoc = uiApp.OpenAndActivateDocument(@"C:\Users\calaes\Documents\Visual Studio 2017\Projects\FamilyToDWG\FamilyToDWG\Mech Template.rte");
+        string keystr = @"FamilyToDWG/Settings";
+        RegistryKey key = Registry.CurrentUser.OpenSubKey(keystr);
+        if (key == null)
+        {
+            key = Registry.CurrentUser.CreateSubKey(keystr);
+        }
+        else
+        {
+            //string docdir = @"C:\Users\calaes\Documents\Visual Studio 2017\Projects\FamilyToDWG\FamilyToDWG\Mech Template.rte";
+            var templateFD = new OpenFileDialog();
+            templateFD.Filter = "rte files (*.rte)|*.rte";
+            templateFD.ShowDialog();
+            string docdir = templateFD.FileName;
+            key.SetValue("TemplateLocation", @docdir);
+        }
+        UIDocument uiDoc = uiApp.OpenAndActivateDocument(key.GetValue("TemplateLocation").ToString());
 
         var FD = new OpenFileDialog();
         FD.Filter = "gfcj files (*.gfcj)|*.gfcj";
