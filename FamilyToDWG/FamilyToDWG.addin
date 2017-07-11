@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Assembly>c:\users\calaes\documents\visual studio 2017\Projects\FamilyToDWG\FamilyToDWG\bin\Debug\FamilyToDWG.dll</Assembly>
+    <ClientId>9637CEBC-4290-4A2E-960B-F233148AE453</ClientId>
+    <FullClassName>FamilyToDWG</FullClassName>
+	<Text>FamilyToDWG</Text>
+    <VendorId>ADSK</VendorId>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+</RevitAddIns>
