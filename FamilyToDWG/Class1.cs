@@ -27,22 +27,23 @@ public class FamilyToDWG : IExternalCommand
     {
         UIApplication uiApp = commandData.Application;
 
-        string keystr = @"FamilyToDWG/Settings";
+        string keystr = @"SOFTWARE\FamilyToDWG";
         RegistryKey key = Registry.CurrentUser.OpenSubKey(keystr);
-        if (key == null)
+        if (key.GetValue("TemplateLocation") == null)
         {
             key = Registry.CurrentUser.CreateSubKey(keystr);
-        }
-        else
-        {
-            //string docdir = @"C:\Users\calaes\Documents\Visual Studio 2017\Projects\FamilyToDWG\FamilyToDWG\Mech Template.rte";
             var templateFD = new OpenFileDialog();
             templateFD.Filter = "rte files (*.rte)|*.rte";
             templateFD.ShowDialog();
             string docdir = templateFD.FileName;
             key.SetValue("TemplateLocation", @docdir);
         }
+
         UIDocument uiDoc = uiApp.OpenAndActivateDocument(key.GetValue("TemplateLocation").ToString());
+        if (uiDoc == null)
+        {
+            return Result.Failed;
+        }
 
         var FD = new OpenFileDialog();
         FD.Filter = "gfcj files (*.gfcj)|*.gfcj";
