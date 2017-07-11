@@ -35,7 +35,7 @@ public class FamilyToDWG : IExternalCommand
         string filename = FD.SafeFileName;
         string capsfiledir = FD.FileName.Replace(FD.SafeFileName, "") + FD.SafeFileName.Replace(".gfcj","");
 
-        if (File.Exists(capsfiledir));
+        if (File.Exists(capsfiledir))
         {
             string[] famfiles = System.IO.Directory.GetFiles(capsfiledir, "*rfa");
 
@@ -79,7 +79,7 @@ public class FamilyToDWG : IExternalCommand
         }
         else
         {
-            Console.WriteLine("Please Create Export Directory For the chosen CAPS file.")
+            Console.WriteLine("Please Create Export Directory For the chosen CAPS file.");
         }
 
         return Result.Succeeded;
