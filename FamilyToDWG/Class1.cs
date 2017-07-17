@@ -40,6 +40,7 @@ public class FamilyToDWG : IExternalCommand
         {
             var templateFD = new OpenFileDialog();
             templateFD.Filter = "rte files (*.rte)|*.rte";
+            templateFD.Title = "Choose a Template";
             templateFD.ShowDialog();
             string docdir = templateFD.FileName;
             key.SetValue("TemplateLocation", @docdir);
@@ -59,6 +60,7 @@ public class FamilyToDWG : IExternalCommand
 
         var FD = new OpenFileDialog();
         FD.Filter = "gfcj files (*.gfcj)|*.gfcj";
+        FD.Title = "Choose A CAPS file";
         FD.ShowDialog();
 
         string filename = FD.SafeFileName;
