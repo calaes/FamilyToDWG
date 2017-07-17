@@ -27,11 +27,17 @@ public class FamilyToDWG : IExternalCommand
     {
         UIApplication uiApp = commandData.Application;
 
-        string keystr = @"SOFTWARE\FamilyToDWG";
-        RegistryKey key = Registry.CurrentUser.OpenSubKey(keystr);
-        if (key.GetValue("TemplateLocation") == null)
+        string keystr = @"HKEY_CURRENT_USER\SOFTWARE\FamilyToDWG";
+        RegistryKey key = Registry.CurrentUser.OpenSubKey(keystr,true);
+        if (key == null)
         {
             key = Registry.CurrentUser.CreateSubKey(keystr);
+            key.SetValue("TemplateLocation", "");
+
+        }
+
+        if (Registry.GetValue(keystr,"TemplateLocation",null) == null)
+        {
             var templateFD = new OpenFileDialog();
             templateFD.Filter = "rte files (*.rte)|*.rte";
             templateFD.ShowDialog();
@@ -39,7 +45,13 @@ public class FamilyToDWG : IExternalCommand
             key.SetValue("TemplateLocation", @docdir);
         }
 
+        if (key.GetValue("TemplateLocation").ToString() == null) 
+            {
+            return Result.Failed;
+        }
+
         UIDocument uiDoc = uiApp.OpenAndActivateDocument(key.GetValue("TemplateLocation").ToString());
+        
         if (uiDoc == null)
         {
             return Result.Failed;
