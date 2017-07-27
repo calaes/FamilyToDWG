@@ -27,84 +27,123 @@ public class FamilyToDWG : IExternalCommand
     {
         UIApplication uiApp = commandData.Application;
 
-        string keystr = @"HKEY_CURRENT_USER\SOFTWARE\FamilyToDWG";
-        RegistryKey key = Registry.CurrentUser.OpenSubKey(keystr,true);
+        string keystr = @"Software\FamilyToDWG";
+        string revityear = "2017";
+        string subkeystr = "TemplateLocation" + revityear;
+        RegistryKey key = Registry.CurrentUser.OpenSubKey(keystr, true);
+
         if (key == null)
         {
             key = Registry.CurrentUser.CreateSubKey(keystr);
-            key.SetValue("TemplateLocation", "");
+            key.SetValue(subkeystr, "");
 
         }
 
-        if (Registry.GetValue(keystr,"TemplateLocation",null) == null)
+        if (key.GetValue(subkeystr, null).ToString() == "" || File.Exists(key.GetValue(subkeystr).ToString()) == false)
         {
             var templateFD = new OpenFileDialog();
             templateFD.Filter = "rte files (*.rte)|*.rte";
             templateFD.Title = "Choose a Template";
             templateFD.ShowDialog();
             string docdir = templateFD.FileName;
-            key.SetValue("TemplateLocation", @docdir);
+            key.SetValue(subkeystr, @docdir);
         }
 
-        if (key.GetValue("TemplateLocation").ToString() == null) 
-            {
+        if (key.GetValue(subkeystr, null).ToString() == null)
+        {
             return Result.Failed;
         }
 
-        UIDocument uiDoc = uiApp.OpenAndActivateDocument(key.GetValue("TemplateLocation").ToString());
-        
+        Autodesk.Revit.DB.Document uiDoc;
+
+        try
+        {
+            uiDoc = uiApp.Application.NewProjectDocument(key.GetValue(subkeystr).ToString());
+        }
+        catch
+        {
+            return Result.Failed;
+        }
+
         if (uiDoc == null)
         {
             return Result.Failed;
         }
 
+        if (!Directory.Exists(@"C:\temp\"))
+        {
+            Directory.CreateDirectory(@"C:\temp\");
+        }
+
+        if (File.Exists(@"C:\temp\new_project.rvt"))
+        {
+            File.Delete(@"C:\temp\new_project.rvt");
+        }
+
+        SaveAsOptions options1 = new SaveAsOptions();
+        options1.OverwriteExistingFile = true;
+        uiDoc.SaveAs(@"C:/temp/new_project.rvt",options1);
+
+        uiApp.OpenAndActivateDocument(@"C:/temp/new_project.rvt");
+
         var FD = new OpenFileDialog();
-        FD.Filter = "gfcj files (*.gfcj)|*.gfcj";
-        FD.Title = "Choose A CAPS file";
+        FD.Filter = "rfa files (*.rfa)|*.rfa";
+        FD.Title = "Choose A RevitRFA Family file";
         FD.ShowDialog();
 
         string filename = FD.SafeFileName;
-        string capsfiledir = FD.FileName.Replace(FD.SafeFileName, "") + FD.SafeFileName.Replace(".gfcj","");
+        string filedir = FD.FileName.Replace(filename, "");
 
-        if (File.Exists(capsfiledir))
+        if (File.Exists(FD.FileName))
         {
-            string[] famfiles = System.IO.Directory.GetFiles(capsfiledir, "*rfa");
-
-            //List<ElementID> _added_element_ids = List<ElementId>();
-
-            foreach (string famfile in famfiles)
+            using (Transaction tx = new Transaction(uiDoc))
             {
-                using (Transaction tx = new Transaction(uiDoc.Document))
+                tx.Start("Load Family");
+                Autodesk.Revit.DB.Family family = null;
+                uiDoc.LoadFamily(FD.FileName, out family);
+                tx.Commit();
+
+                string name = family.Name;
+                foreach (ElementId id in family.GetFamilySymbolIds())
                 {
-                    tx.Start("Load Family");
-                    Autodesk.Revit.DB.Family family = null;
-                    uiDoc.Document.LoadFamily(famfile, out family);
+                    FamilySymbol famsymbol = family.Document.GetElement(id) as FamilySymbol;
+                    XYZ origin = new XYZ(0, 0, 0);
+                    tx.Start("Load Family Member");
+                    famsymbol.Activate();
+                    FamilyInstance instance = uiDoc.Create.NewFamilyInstance(origin, famsymbol, StructuralType.NonStructural);
                     tx.Commit();
 
-                    string name = family.Name;
-                    //ISet<ElementID> familySymbolIds = family.GetFamilySymbolIds();
-                    foreach (ElementId id in family.GetFamilySymbolIds())
+                    DWGExportOptions options = new DWGExportOptions();
+                    options.FileVersion = ACADVersion.R2007;
+                    options.ExportOfSolids = SolidGeometry.ACIS;
+                    options.HideUnreferenceViewTags = true;
+                    //options.FileVersion = (ACADVersion)(3);
+
+                    var collector = new FilteredElementCollector(uiDoc);
+
+                    var viewFamilyType = collector
+                        .OfClass(typeof(ViewFamilyType))
+                        .OfType<ViewFamilyType>()
+                        .FirstOrDefault(x => x.ViewFamily == ViewFamily.ThreeDimensional);
+
+                    // Export the active view
+                    ICollection<ElementId> views = new List<ElementId>();
+                    tx.Start("ChangeView");
+                    View3D view = View3D.CreateIsometric(uiDoc, viewFamilyType.Id);
+                    view.DisplayStyle = DisplayStyle.Shading;
+                    tx.Commit();
+                    views.Add(view.Id);
+                    string dwgfilename = famsymbol.Name + ".dwg";
+                    string dwgfullfilename = filedir + dwgfilename;
+                    if (File.Exists(dwgfullfilename))
                     {
-                        FamilySymbol famsymbol = family.Document.GetElement(id) as FamilySymbol;
-                        XYZ origin = new XYZ(0, 0, 0);
-                        tx.Start("Load Family Member");
-                        famsymbol.Activate();
-                        FamilyInstance instance = uiDoc.Document.Create.NewFamilyInstance(origin, famsymbol, StructuralType.NonStructural);
-                        tx.Commit();
-
-                        DWGExportOptions options = new DWGExportOptions();
-                        //options.FileVersion = (ACADVersion)(3);
-
-                        // Export the active view
-                        ICollection<ElementId> views = new List<ElementId>();
-                        views.Add(uiDoc.Document.ActiveView.Id);
-                        string dwgfilename = famsymbol.Name + ".dwg";
-                        uiDoc.Document.Export(@capsfiledir, @dwgfilename, views, options);
-
-                        tx.Start("Delete Family Member");
-                        uiDoc.Document.Delete(instance.Id);
-                        tx.Commit();
+                        File.Delete(dwgfullfilename);
                     }
+                    uiDoc.Export(@filedir, @dwgfilename, views, options);
+
+                    tx.Start("Delete Family Member");
+                    uiDoc.Delete(instance.Id);
+                    tx.Commit();
                 }
             }
         }

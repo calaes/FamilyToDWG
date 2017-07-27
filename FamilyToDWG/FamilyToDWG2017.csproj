@@ -7,8 +7,8 @@
     <ProjectGuid>{94E35411-202F-40F9-AC86-4C3F38400C7E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>FamilyToDWG</RootNamespace>
-    <AssemblyName>FamilyToDWG</AssemblyName>
+    <RootNamespace>FamilyToDWG2017</RootNamespace>
+    <AssemblyName>FamilyToDWG2017</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
